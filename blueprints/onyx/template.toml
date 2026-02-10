@@ -250,4 +250,4 @@ env = [
 'REDIS_HOST=cache',
 'MODEL_SERVER_HOST=inference_model_server',
 'INDEXING_MODEL_SERVER_HOST=indexing_model_server',
-'INTERNAL_URL=http://api_server:8080]
+'INTERNAL_URL=http://api_server:8080']
