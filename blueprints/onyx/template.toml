@@ -18,15 +18,15 @@ env = [
 '# Copy this file to .env so it's picked up by the docker compose yaml files
 '# Uncomment the values you would like to set
 '# No edits necessary, works out of the box
-'
-'
+'',
+'',
 '################################################################################
 '## COMMONLY MODIFIED CONFIGURATIONS
 '################################################################################
 '## Version of Onyx to deploy, default is latest (main built nightly)
 '## For Craft support, use: IMAGE_TAG=craft-latest
 'IMAGE_TAG=latest
-'
+'',
 '## Onyx Craft Configuration
 '## Craft enables AI-powered web app building within Onyx (disabled by default)
 '## To enable Craft, uncomment the lines below (and comment out the above)
@@ -34,7 +34,7 @@ env = [
 '## This adds Node.js 20 and opencode CLI to the image at build time
 '# ENABLE_CRAFT=true
 '# IMAGE_TAG=craft-latest
-'
+'',
 '## Auth Settings
 '### https://docs.onyx.app/deployment/authentication
 'AUTH_TYPE=disabled
@@ -45,24 +45,24 @@ env = [
 '# API_KEY_HASH_ROUNDS=
 '### You can add a comma separated list of domains like onyx.app, only those domains will be allowed to signup/log in
 '# VALID_EMAIL_DOMAINS=
-'
+'',
 '## Chat Configuration
 '# HARD_DELETE_CHATS=
-'
+'',
 '## Base URL for redirects
 '# WEB_DOMAIN=
-'
+'',
 '## Enterprise Features, requires a paid plan and licenses
 'ENABLE_PAID_ENTERPRISE_EDITION_FEATURES=false
-'
+'',
 '## User File Upload Configuration
 '# Skip the token count threshold check (100,000 tokens) for uploaded files
 '# For self-hosted: set to true to skip for all users
 '# SKIP_USERFILE_THRESHOLD=false
 '# For multi-tenant: comma-separated list of tenant IDs to skip threshold
 '# SKIP_USERFILE_THRESHOLD_TENANT_IDS=
-'
-'
+'',
+'',
 '################################################################################
 '## SERVICES CONFIGURATIONS
 '################################################################################
@@ -78,13 +78,13 @@ env = [
 '# POSTGRES_POOL_RECYCLE=
 '# DB_READONLY_USER=
 '# DB_READONLY_PASSWORD=
-'
+'',
 '## File Store Backend: "s3" (default, uses MinIO) or "postgres" (no extra services needed)
 '## COMPOSE_PROFILES activates the MinIO service. To use PostgreSQL file storage instead,
 '## comment out COMPOSE_PROFILES and set FILE_STORE_BACKEND=postgres.
 'COMPOSE_PROFILES=s3-filestore
 'FILE_STORE_BACKEND=s3
-'
+'',
 '## MinIO/S3 Configuration (only needed when FILE_STORE_BACKEND=s3)
 'S3_ENDPOINT_URL=http://minio:9000
 'S3_AWS_ACCESS_KEY_ID=minioadmin
@@ -92,14 +92,14 @@ env = [
 'S3_FILE_STORE_BUCKET_NAME=onyx-file-store-bucket
 'MINIO_ROOT_USER=minioadmin
 'MINIO_ROOT_PASSWORD=${minio_root_password}
-'
+'',
 '## Nginx Proxy Timeout Configuration (in seconds)
 '## These settings control how long nginx waits for upstream servers (api_server/web_server)
 '## Increase these values if you experience timeout errors with long-running requests
 '# NGINX_PROXY_CONNECT_TIMEOUT=300
 '# NGINX_PROXY_SEND_TIMEOUT=300
 '# NGINX_PROXY_READ_TIMEOUT=300
-'
+'',
 '## MCP Server Configuration
 '## The MCP (Model Context Protocol) server allows external MCP clients to interact with Onyx
 '## Set to true to enable the MCP server (disabled by default)
@@ -108,29 +108,29 @@ env = [
 '# MCP_SERVER_PORT=8090
 '## CORS origins for MCP clients (comma-separated list)
 '# MCP_SERVER_CORS_ORIGINS=
-'
+'',
 '## Discord Bot Configuration
 '## The Discord bot allows users to interact with Onyx from Discord servers
 '## Bot token from Discord Developer Portal (required to enable the bot)
 '# DISCORD_BOT_TOKEN=
 '## Command prefix for bot commands (default: "!")
 '# DISCORD_BOT_INVOKE_CHAR=!
-'
+'',
 '## Celery Configuration
 '# CELERY_BROKER_POOL_LIMIT=
 '# CELERY_WORKER_DOCFETCHING_CONCURRENCY=
 '# CELERY_WORKER_DOCPROCESSING_CONCURRENCY=
 '# CELERY_WORKER_LIGHT_CONCURRENCY=
 '# CELERY_WORKER_LIGHT_PREFETCH_MULTIPLIER=
-'
+'',
 '## AWS Configuration
 '# AWS_ACCESS_KEY_ID=
 '# AWS_SECRET_ACCESS_KEY=
 '# AWS_REGION_NAME=
 '# Set to true when using IAM authentication for Postgres connections.
 'USE_IAM_AUTH=false
-'
-'
+'',
+'',
 '################################################################################
 '## DEVELOPER, DEBUGGING, AND LOGGING
 '################################################################################
@@ -142,18 +142,18 @@ env = [
 '# LOG_POSTGRES_LATENCY=
 '# LOG_POSTGRES_CONN_COUNTS=
 '# DISABLE_TELEMETRY=
-'
+'',
 '## Feature Flags
 '# SHOW_EXTRA_CONNECTORS=true
 '# DISABLE_MODEL_SERVER=false
-'
+'',
 '## Analytics
 '# SENTRY_DSN=
-'
+'',
 '## Demo/Testing
 '# MOCK_CONNECTOR_FILE_PATH=
-'
-'
+'',
+'',
 '################################################################################
 '## ADVANCED CONFIGURATIONS
 '################################################################################
@@ -164,7 +164,7 @@ env = [
 '# NOTIFY_SLACKBOT_NO_ANSWER=
 '# ONYX_BOT_MAX_QPM=
 '# ONYX_BOT_MAX_WAIT_TIME=
-'
+'',
 '## Advanced Auth Settings
 '# GOOGLE_OAUTH_CLIENT_ID=
 '# GOOGLE_OAUTH_CLIENT_SECRET=
@@ -182,7 +182,7 @@ env = [
 '# CORS_ALLOWED_ORIGIN=
 '# INTEGRATION_TESTS_MODE=
 '# JWT_PUBLIC_KEY_URL=
-'
+'',
 '## Gen AI Settings
 '# GEN_AI_MAX_TOKENS=
 '# LLM_SOCKET_READ_TIMEOUT=
@@ -192,13 +192,13 @@ env = [
 '# GEN_AI_API_KEY=
 '# GENERATIVE_MODEL_ACCESS_CHECK_FREQ=
 '# LITELLM_CUSTOM_ERROR_MESSAGE_MAPPINGS=
-'
+'',
 '## Query Options
 '# DOC_TIME_DECAY=
 '# HYBRID_ALPHA=
 '# EDIT_KEYWORD_QUERY=
 '# USE_SEMANTIC_KEYWORD_EXPANSIONS_BASIC_SEARCH=
-'
+'',
 '## Model Configuration
 '# EMBEDDING_BATCH_SIZE=
 '# DOCUMENT_ENCODER_MODEL=
@@ -211,7 +211,7 @@ env = [
 '# INDEX_BATCH_SIZE=
 '# MIN_THREADS_ML_MODELS=
 '# CLIENT_EMBEDDING_TIMEOUT=
-'
+'',
 '## Indexing Configuration
 '# VESPA_SEARCHER_THREADS=
 '# ENABLED_CONNECTOR_TYPES=
@@ -227,19 +227,19 @@ env = [
 '# GITHUB_CONNECTOR_BASE_URL=
 '# MAX_DOCUMENT_CHARS=
 '# MAX_FILE_SIZE_BYTES=
-'
+'',
 '## OAuth Connector Configs
 '# EGNYTE_CLIENT_ID=
 '# EGNYTE_CLIENT_SECRET=
 '# EGNYTE_LOCALHOST_OVERRIDE=
 '# LINEAR_CLIENT_ID=
 '# LINEAR_CLIENT_SECRET=
-'
+'',
 '## Miscellaneous
 '# ONYX_QUERY_HISTORY_TYPE=
 '# CHECK_TTL_MANAGEMENT_TASK_FREQUENCY_IN_HOURS=
 '# VESPA_LANGUAGE_OVERRIDE=
-'
+'',
 '## Frontend Configs
 '# THEME_IS_DARK=
 '# NEXT_PUBLIC_DISABLE_LOGOUT=
@@ -247,7 +247,7 @@ env = [
 '# NEXT_PUBLIC_THEME=
 '# NEXT_PUBLIC_DO_NOT_USE_TOGGLE_OFF_DANSWER_POWERED=
 '# NEXT_PUBLIC_CUSTOM_REFRESH_URL=
-'
+'',
 '## Pointer to services
 'POSTGRES_HOST=relational_db
 'VESPA_HOST=index
