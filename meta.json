@@ -4491,6 +4491,24 @@
     ]
   },
   {
+    "id": "onyx",
+    "name": "Onyx",
+    "version": "latest",
+    "description": "Onyx is a feature-rich, self-hostable Chat UI that works with any LLM. It is easy to deploy and can run in a completely airgapped environment. Onyx comes loaded with advanced features like Agents, Web Search, RAG, MCP, Deep Research, Connectors to 40+ knowledge sources, and more.",
+    "links": {
+      "github": "https://github.com/onyx-dot-app/onyx",
+      "website": "https://www.onyx.app/",
+      "docs": "https://docs.onyx.app/"
+    },
+    "logo": "OnyxLogo.jpg",
+    "tags": [
+      "database",
+      "llm",
+      "chat",
+      "rag"
+    ]
+  },
+  {
     "id": "open-fiesta",
     "name": "Open Fiesta",
     "version": "latest",
