@@ -1,8 +1,5 @@
 [variables]
 main_domain = "${domain}"
-postgres_password = "${password:32}"
-minio_root_password = "${password:32}"
-"""
 
 [[config.domains]]
 serviceName = "nginx"
@@ -11,11 +8,6 @@ host = "${main_domain}"
 
 [config]
 env = [
-'# Copy this file to .env so it's picked up by the docker compose yaml files',
-'# Uncomment the values you would like to set',
-'# No edits necessary, works out of the box',
-'',
-'',
 '################################################################################',
 '## COMMONLY MODIFIED CONFIGURATIONS',
 '################################################################################',
@@ -64,7 +56,7 @@ env = [
 '################################################################################',
 '## Database Configuration',
 'POSTGRES_USER=postgres',
-'POSTGRES_PASSWORD=${postgres_password}',
+'POSTGRES_PASSWORD=password',
 '# POSTGRES_DB=',
 '# POSTGRES_DEFAULT_SCHEMA=',
 '# POSTGRES_USE_NULL_POOL=',
@@ -87,7 +79,7 @@ env = [
 'S3_AWS_SECRET_ACCESS_KEY=minioadmin',
 'S3_FILE_STORE_BUCKET_NAME=onyx-file-store-bucket',
 'MINIO_ROOT_USER=minioadmin',
-'MINIO_ROOT_PASSWORD=${minio_root_password}',
+'MINIO_ROOT_PASSWORD=minioadmin',
 '',
 '## Nginx Proxy Timeout Configuration (in seconds)',
 '## These settings control how long nginx waits for upstream servers (api_server/web_server)',
@@ -251,3 +243,192 @@ env = [
 'MODEL_SERVER_HOST=inference_model_server',
 'INDEXING_MODEL_SERVER_HOST=indexing_model_server',
 'INTERNAL_URL=http://api_server:8080']
+
+[[config.mounts]]
+filePath = "/volumes/data/nginx/app.conf.template"
+content = """
+# Log format to include request latency
+log_format custom_main '$remote_addr - $remote_user [$time_local] "$request" '
+                '$status $body_bytes_sent "$http_referer" '
+                '"$http_user_agent" "$http_x_forwarded_for" '
+                'rt=$request_time';
+
+upstream api_server {
+    # fail_timeout=0 means we always retry an upstream even if it failed
+    # to return a good HTTP response
+
+    # for UNIX domain socket setups
+    #server unix:/tmp/gunicorn.sock fail_timeout=0;
+
+    # for a TCP configuration
+    # TODO: use gunicorn to manage multiple processes
+    server ${ONYX_BACKEND_API_HOST}:8080 fail_timeout=0;
+}
+
+upstream web_server {
+    server ${ONYX_WEB_SERVER_HOST}:3000 fail_timeout=0;
+}
+
+# Conditionally include MCP upstream configuration
+include /etc/nginx/conf.d/mcp_upstream.conf.inc;
+
+server {
+    listen 80 default_server;
+
+    client_max_body_size 5G;    # Maximum upload size
+
+    access_log /var/log/nginx/access.log custom_main;
+
+    # Conditionally include MCP location configuration
+    include /etc/nginx/conf.d/mcp.conf.inc;
+
+    # Match both /api/* and /openapi.json in a single rule
+    location ~ ^/(api|openapi.json)(/.*)?$ {
+        # Rewrite /api prefixed matched paths
+        rewrite ^/api(/.*)$ $1 break;
+
+        # misc headers
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Port $server_port;
+        proxy_set_header Host $host;
+
+        # need to use 1.1 to support chunked transfers
+        proxy_http_version 1.1;
+        proxy_buffering off;
+
+        # timeout settings
+        proxy_connect_timeout ${NGINX_PROXY_CONNECT_TIMEOUT}s;
+        proxy_send_timeout ${NGINX_PROXY_SEND_TIMEOUT}s;
+        proxy_read_timeout ${NGINX_PROXY_READ_TIMEOUT}s;
+
+        # we don't want nginx trying to do something clever with
+        # redirects, we set the Host: header above already.
+        proxy_redirect off;
+        proxy_pass http://api_server;
+    }
+
+    location / {
+        # misc headers
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Port $server_port;
+        proxy_set_header Host $host;
+
+        proxy_http_version 1.1;
+
+        # timeout settings
+        proxy_connect_timeout ${NGINX_PROXY_CONNECT_TIMEOUT}s;
+        proxy_send_timeout ${NGINX_PROXY_SEND_TIMEOUT}s;
+        proxy_read_timeout ${NGINX_PROXY_READ_TIMEOUT}s;
+
+        # we don't want nginx trying to do something clever with
+        # redirects, we set the Host: header above already.
+        proxy_redirect off;
+        proxy_pass http://web_server;
+    }
+
+}
+"""
+
+[[config.mounts]]
+filePath = "/volumes/data/nginx/mcp.conf.inc.template"
+content = """
+# MCP Server - Model Context Protocol for LLM integrations
+# Match /mcp, /mcp/, or /mcp/* but NOT /mcpserver, /mcpapi, etc.
+location ~ ^/mcp(/.*)?$ {
+    # misc headers
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Host $host;
+    proxy_set_header X-Forwarded-Port $server_port;
+    proxy_set_header Host $host;
+
+    # Standard HTTP 1.1
+    proxy_http_version 1.1;
+
+    # Timeouts for MCP requests
+    proxy_connect_timeout 30s;
+    proxy_send_timeout 300s;
+    proxy_read_timeout 300s;
+
+    proxy_redirect off;
+    rewrite ^/mcp(/.*)$ $1 break;
+    rewrite ^/mcp/?$ / break;
+    proxy_pass http://mcp_server;
+}
+"""
+
+[[config.mounts]]
+filePath = "/volumes/data/nginx/mcp_upstream.conf.inc.template"
+content = """
+upstream mcp_server {
+    server ${ONYX_MCP_SERVER_HOST}:8090 fail_timeout=0;
+}
+"""
+
+[[config.mounts]]
+filePath = "/volumes/data/nginx/run-nginx.sh"
+content = """
+# fill in the template
+export ONYX_BACKEND_API_HOST="${ONYX_BACKEND_API_HOST:-api_server}"
+export ONYX_WEB_SERVER_HOST="${ONYX_WEB_SERVER_HOST:-web_server}"
+export ONYX_MCP_SERVER_HOST="${ONYX_MCP_SERVER_HOST:-mcp_server}"
+
+export SSL_CERT_FILE_NAME="${SSL_CERT_FILE_NAME:-ssl.crt}"
+export SSL_CERT_KEY_FILE_NAME="${SSL_CERT_KEY_FILE_NAME:-ssl.key}"
+
+# Nginx timeout settings (in seconds)
+export NGINX_PROXY_CONNECT_TIMEOUT="${NGINX_PROXY_CONNECT_TIMEOUT:-300}"
+export NGINX_PROXY_SEND_TIMEOUT="${NGINX_PROXY_SEND_TIMEOUT:-300}"
+export NGINX_PROXY_READ_TIMEOUT="${NGINX_PROXY_READ_TIMEOUT:-300}"
+
+echo "Using API server host: $ONYX_BACKEND_API_HOST"
+echo "Using web server host: $ONYX_WEB_SERVER_HOST"
+echo "Using MCP server host: $ONYX_MCP_SERVER_HOST"
+echo "Using nginx proxy timeouts - connect: ${NGINX_PROXY_CONNECT_TIMEOUT}s, send: ${NGINX_PROXY_SEND_TIMEOUT}s, read: ${NGINX_PROXY_READ_TIMEOUT}s"
+
+envsubst '$DOMAIN $SSL_CERT_FILE_NAME $SSL_CERT_KEY_FILE_NAME $ONYX_BACKEND_API_HOST $ONYX_WEB_SERVER_HOST $ONYX_MCP_SERVER_HOST $NGINX_PROXY_CONNECT_TIMEOUT $NGINX_PROXY_SEND_TIMEOUT $NGINX_PROXY_READ_TIMEOUT' < "/etc/nginx/conf.d/$1" > /etc/nginx/conf.d/app.conf
+
+# Conditionally create MCP server configuration
+if [ "${MCP_SERVER_ENABLED}" = "True" ] || [ "${MCP_SERVER_ENABLED}" = "true" ]; then
+  echo "MCP server is enabled, creating MCP configuration..."
+  envsubst '$ONYX_MCP_SERVER_HOST' < "/etc/nginx/conf.d/mcp_upstream.conf.inc.template" > /etc/nginx/conf.d/mcp_upstream.conf.inc
+  envsubst '$ONYX_MCP_SERVER_HOST' < "/etc/nginx/conf.d/mcp.conf.inc.template" > /etc/nginx/conf.d/mcp.conf.inc
+else
+  echo "MCP server is disabled, removing MCP configuration..."
+  # Leave empty placeholder files so nginx includes do not fail
+  # These files are empty because MCP server is disabled
+  echo "# Empty file - MCP server is disabled" > /etc/nginx/conf.d/mcp_upstream.conf.inc
+  echo "# Empty file - MCP server is disabled" > /etc/nginx/conf.d/mcp.conf.inc
+fi
+
+# wait for the api_server to be ready
+echo "Waiting for API server to boot up; this may take a minute or two..."
+echo "If this takes more than ~5 minutes, check the logs of the API server container for errors with the following command:"
+echo
+echo "docker logs onyx-api_server-1"
+echo
+
+while true; do
+  # Use curl to send a request and capture the HTTP status code
+  status_code=$(curl -o /dev/null -s -w "%{http_code}\n" "http://${ONYX_BACKEND_API_HOST}:8080/health")
+  
+  # Check if the status code is 200
+  if [ "$status_code" -eq 200 ]; then
+    echo "API server responded with 200, starting nginx..."
+    break  # Exit the loop
+  else
+    echo "API server responded with $status_code, retrying in 5 seconds..."
+    sleep 5  # Sleep for 5 seconds before retrying
+  fi
+done
+
+# Start nginx and reload every 6 hours
+while :; do sleep 6h & wait; nginx -s reload; done & nginx -g "daemon off;"
+"""
